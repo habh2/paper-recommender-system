@@ -56,7 +56,7 @@ def ensure_collection(client: QdrantClient):
 
 def fetch_unembedded(conn: sqlite3.Connection, batch_size: int) -> list[dict]:
     rows = conn.execute(
-        "SELECT paper_id, title, abstract FROM papers WHERE embedded = 0 LIMIT ?",
+        "SELECT paper_id, title, abstract FROM papers_silver WHERE embedded = 0 LIMIT ?",
         (batch_size,)
     ).fetchall()
     return [{"id": r[0], "title": r[1] or "", "abstract": r[2] or ""} for r in rows]

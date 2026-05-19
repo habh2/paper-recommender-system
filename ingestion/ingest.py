@@ -29,6 +29,11 @@ def create_db(path: str) -> sqlite3.Connection:
             query           TEXT
         )
     """)
+    conn.execute("""
+        CREATE VIEW IF NOT EXISTS papers_silver AS
+        SELECT * FROM papers
+        WHERE abstract IS NOT NULL AND abstract != ''
+    """)
     conn.commit()
     return conn
 

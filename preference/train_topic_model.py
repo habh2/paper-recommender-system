@@ -3,6 +3,7 @@ import sqlite3
 import time
 import logging
 import numpy as np
+from sklearn.feature_extraction.text import CountVectorizer
 from bertopic import BERTopic
 from qdrant_client import QdrantClient
 from extract_embeddings import extract
@@ -16,16 +17,26 @@ MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "topic_mod
 NR_TOPICS = 40
 
 
-def fetch_abstracts(conn: sqlite3.Connection, paper_ids: list[str]) -> list[str]:
+def fetch_abstracts(conn: sqlite3.Connection, paper_ids: list[str], vectors: np.ndarray):
     id_to_abstract = dict(conn.execute(
-        "SELECT paper_id, abstract FROM papers"
+        "SELECT paper_id, abstract FROM papers_silver"
     ).fetchall())
-    return [id_to_abstract.get(pid, "") or "" for pid in paper_ids]
+    filtered_ids, filtered_abstracts, filtered_vectors = [], [], []
+    for pid, vec in zip(paper_ids, vectors):
+        abstract = id_to_abstract.get(pid)
+        if abstract:
+            filtered_ids.append(pid)
+            filtered_abstracts.append(abstract)
+            filtered_vectors.append(vec)
+    return filtered_ids, filtered_abstracts, np.array(filtered_vectors, dtype=np.float32)
 
 
 def train(abstracts: list[str], vectors: np.ndarray) -> BERTopic:
-    model = BERTopic(nr_topics=NR_TOPICS, verbose=True)
-    model.fit(abstracts, embeddings=vectors)
+    vectorizer = CountVectorizer(stop_words="english")
+    model = BERTopic(nr_topics=NR_TOPICS, verbose=True, vectorizer_model=vectorizer)
+    topics, _ = model.fit_transform(abstracts, embeddings=vectors)
+    new_topics = model.reduce_outliers(abstracts, topics, strategy="embeddings", embeddings=vectors)
+    model.update_topics(abstracts, topics=new_topics, vectorizer_model=vectorizer)
     return model
 
 
@@ -37,19 +48,19 @@ if __name__ == "__main__":
     paper_ids, vectors = extract(client)
     log.info(f"Extracted {len(paper_ids)} papers ({time.time() - t0:.1f}s)")
 
-    log.info("Fetching abstracts from SQLite...")
+    log.info("Fetching abstracts from SQLite (papers_silver)...")
     conn = sqlite3.connect(DB_PATH)
-    abstracts = fetch_abstracts(conn, paper_ids)
+    paper_ids, abstracts, vectors = fetch_abstracts(conn, paper_ids, vectors)
     conn.close()
-    log.info(f"Fetched {len(abstracts)} abstracts ({time.time() - t0:.1f}s)")
+    log.info(f"Filtered to {len(abstracts)} papers with abstracts ({time.time() - t0:.1f}s)")
 
     log.info(f"Training BERTopic (target {NR_TOPICS} topics) on {len(abstracts)} documents...")
     model = train(abstracts, vectors)
     log.info(f"Training done ({time.time() - t0:.1f}s)")
 
     topics = model.get_topic_info()
-    log.info(f"Topics found: {len(topics) - 1}")  # -1 excludes outlier topic
-    print(topics[["Topic", "Count", "Name"]].head(10).to_string(index=False))
+    log.info(f"Topics found: {len(topics) - 1}")
+    print(topics[["Topic", "Count", "Name"]].head(15).to_string(index=False))
 
     model.save(MODEL_PATH, serialization="pickle", save_ctfidf=True)
     log.info(f"Model saved to {MODEL_PATH}")
