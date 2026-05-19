@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "papers.db")
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "topic_model")
-NR_TOPICS = 40
+NR_TOPICS = 80
 
 
 def fetch_abstracts(conn: sqlite3.Connection, paper_ids: list[str], vectors: np.ndarray):
@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
     topics = model.get_topic_info()
     log.info(f"Topics found: {len(topics) - 1}")
-    print(topics[["Topic", "Count", "Name"]].head(15).to_string(index=False))
+    print(topics[["Topic", "Count", "Name"]].to_string(index=False))
 
     model.save(MODEL_PATH, serialization="pickle", save_ctfidf=True)
     log.info(f"Model saved to {MODEL_PATH}")
