@@ -1,1 +1,5 @@
 Notes.md
+.venv/
+data/
+*.pyc
+app.log
