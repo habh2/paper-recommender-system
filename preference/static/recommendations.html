@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recommendations</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+
+    header {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+
+    h1 { font-size: 1.4rem; color: #333; }
+
+    a { color: #2563eb; font-size: 0.9rem; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    #seed {
+      width: 100%;
+      max-width: 800px;
+      background: #e8f0fe;
+      border-left: 4px solid #2563eb;
+      border-radius: 6px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 2rem;
+      font-size: 0.9rem;
+      color: #333;
+    }
+
+    #seed span { font-weight: 600; }
+
+    #status { color: #888; font-size: 0.9rem; margin-bottom: 1.5rem; }
+
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 800px;
+      margin-bottom: 1rem;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .card h2 { font-size: 1rem; color: #111; line-height: 1.4; }
+
+    .score {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: white;
+      background: #2563eb;
+      padding: 0.2rem 0.6rem;
+      border-radius: 12px;
+      white-space: nowrap;
+    }
+
+    .card p { font-size: 0.88rem; color: #444; line-height: 1.6; margin-bottom: 0.75rem; }
+
+    .topics { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+    .topic-tag {
+      font-size: 0.78rem;
+      background: #f0f4ff;
+      color: #2563eb;
+      border: 1px solid #c7d7fd;
+      border-radius: 12px;
+      padding: 0.2rem 0.7rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Your Recommendations</h1>
+    <a href="/">&#8592; Back to comparisons</a>
+  </header>
+
+  <div id="seed"><span>Seed paper:</span> <span id="seed-title">Loading...</span></div>
+  <p id="status"></p>
+  <div id="results"></div>
+
+  <script>
+    async function load() {
+      const seedRes = await fetch("/last-chosen");
+      if (!seedRes.ok) {
+        document.getElementById("seed-title").textContent = "No choices recorded yet — go make some comparisons first.";
+        return;
+      }
+
+      const seed = await seedRes.json();
+      document.getElementById("seed-title").textContent = seed.title;
+
+      const recRes = await fetch(`/recommend?paper_id=${encodeURIComponent(seed.paper_id)}&k=10`);
+      if (!recRes.ok) {
+        document.getElementById("status").textContent = "Could not load recommendations.";
+        return;
+      }
+
+      const data = await recRes.json();
+      document.getElementById("status").textContent = `${data.recommendations.length} recommendations based on your taste profile`;
+
+      const container = document.getElementById("results");
+      for (const r of data.recommendations) {
+        const topics = r.top_topics.map(t =>
+          `<span class="topic-tag">${t.label.replace(/^\d+_/, "").replaceAll("_", " ")}</span>`
+        ).join("");
+
+        container.innerHTML += `
+          <div class="card">
+            <div class="card-header">
+              <h2>${r.title}</h2>
+              <span class="score">${(r.score * 100).toFixed(0)}% match</span>
+            </div>
+            <p>${r.abstract}</p>
+            <div class="topics">${topics}</div>
+          </div>`;
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>

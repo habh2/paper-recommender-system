@@ -3,19 +3,29 @@ import sqlite3
 import logging
 from datetime import datetime, timezone
 from contextlib import contextmanager, asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from qdrant_client import QdrantClient
+from .rerank import load_models, get_candidates, score_candidates, enrich_with_metadata
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%H:%M:%S")
 log = logging.getLogger(__name__)
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "papers.db")
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+TOPIC_MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "topic_model")
+PREFERENCE_MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "preference_model.pkl")
+QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
+
+preference_model = None
+topic_labels = None
+qdrant_client = None
 
 
 @asynccontextmanager
 async def lifespan(_):
+    global preference_model, topic_labels, qdrant_client
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS choices (
@@ -26,6 +36,10 @@ async def lifespan(_):
             )
         """)
         conn.commit()
+    log.info("Loading models...")
+    preference_model, topic_labels = load_models(TOPIC_MODEL_PATH, PREFERENCE_MODEL_PATH)
+    qdrant_client = QdrantClient(url=QDRANT_URL)
+    log.info("Models loaded")
     yield
 
 
@@ -79,6 +93,30 @@ def post_choice(body: ChoiceRequest):
 
     log.info(f"Choice recorded — {total} total")
     return {"total_choices": total}
+
+
+@app.get("/recommend")
+def get_recommendations(paper_id: str = Query(...), k: int = Query(default=10, ge=1, le=50)):
+    candidates = get_candidates(paper_id, qdrant_client)
+    if not candidates:
+        raise HTTPException(status_code=404, detail="No candidates found for this paper")
+
+    with get_db() as conn:
+        results = score_candidates(candidates, conn, preference_model, topic_labels, k=k)
+        results = enrich_with_metadata(results, conn)
+
+    return {"seed_paper_id": paper_id, "recommendations": results}
+
+
+@app.get("/last-chosen")
+def get_last_chosen():
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT chosen_paper_id, p.title FROM choices c JOIN papers p ON p.paper_id = c.chosen_paper_id ORDER BY timestamp DESC LIMIT 1"
+        ).fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="No choices recorded yet")
+    return {"paper_id": row["chosen_paper_id"], "title": row["title"]}
 
 
 app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
