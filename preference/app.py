@@ -95,6 +95,22 @@ def post_choice(body: ChoiceRequest):
     return {"total_choices": total}
 
 
+@app.get("/profile")
+def get_profile(n: int = Query(default=5, ge=1, le=20)):
+    weights = preference_model.coef_[0]
+    ranked = sorted(enumerate(weights), key=lambda x: x[1], reverse=True)
+
+    def fmt(idx, weight):
+        label = topic_labels.get(idx, f"topic_{idx}")
+        clean = label.replace(f"{idx}_", "").replace("_", " ")
+        return {"label": clean, "weight": round(float(weight), 3)}
+
+    return {
+        "liked": [fmt(i, w) for i, w in ranked[:n]],
+        "avoided": [fmt(i, w) for i, w in ranked[-n:][::-1]],
+    }
+
+
 @app.get("/recommend")
 def get_recommendations(paper_id: str = Query(...), k: int = Query(default=10, ge=1, le=50)):
     candidates = get_candidates(paper_id, qdrant_client)

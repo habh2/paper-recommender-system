@@ -89,6 +89,46 @@
       border-radius: 12px;
       padding: 0.2rem 0.7rem;
     }
+
+    #profile {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      width: 100%;
+      max-width: 800px;
+      margin-bottom: 2rem;
+    }
+
+    .profile-card {
+      background: white;
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    .profile-card h3 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .profile-card.liked h3 { color: #16a34a; }
+    .profile-card.avoided h3 { color: #dc2626; }
+
+    .profile-item {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      padding: 0.3rem 0;
+      border-bottom: 1px solid #f0f0f0;
+      color: #333;
+    }
+
+    .profile-item:last-child { border-bottom: none; }
+
+    .weight { font-weight: 600; font-size: 0.8rem; color: #888; }
   </style>
 </head>
 <body>
@@ -98,12 +138,43 @@
   </header>
 
   <div id="seed"><span>Seed paper:</span> <span id="seed-title">Loading...</span></div>
+
+  <div id="profile">
+    <div class="profile-card liked">
+      <h3>Topics you prefer</h3>
+      <div id="liked-list"></div>
+    </div>
+    <div class="profile-card avoided">
+      <h3>Topics you avoid</h3>
+      <div id="avoided-list"></div>
+    </div>
+  </div>
+
   <p id="status"></p>
   <div id="results"></div>
 
   <script>
+    function renderProfileList(items, containerId) {
+      const el = document.getElementById(containerId);
+      el.innerHTML = items.map(t => `
+        <div class="profile-item">
+          <span>${t.label}</span>
+          <span class="weight">${t.weight > 0 ? "+" : ""}${t.weight.toFixed(2)}</span>
+        </div>`).join("");
+    }
+
     async function load() {
-      const seedRes = await fetch("/last-chosen");
+      const [seedRes, profileRes] = await Promise.all([
+        fetch("/last-chosen"),
+        fetch("/profile?n=5"),
+      ]);
+
+      if (profileRes.ok) {
+        const profile = await profileRes.json();
+        renderProfileList(profile.liked, "liked-list");
+        renderProfileList(profile.avoided, "avoided-list");
+      }
+
       if (!seedRes.ok) {
         document.getElementById("seed-title").textContent = "No choices recorded yet — go make some comparisons first.";
         return;
