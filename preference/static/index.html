@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paper Recommender</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+
+    h1 { margin-bottom: 0.5rem; font-size: 1.4rem; color: #333; }
+
+    #status { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+
+    #pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      width: 100%;
+      max-width: 1100px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .card h2 { font-size: 1rem; color: #111; line-height: 1.4; }
+
+    .card p { font-size: 0.88rem; color: #444; line-height: 1.6; flex: 1; }
+
+    .card button {
+      padding: 0.6rem 1.2rem;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.15s;
+    }
+
+    .card button:hover { background: #1d4ed8; }
+
+    #loading { color: #888; font-size: 1rem; }
+
+    #skip-btn {
+      margin-top: 1.5rem;
+      padding: 0.6rem 1.6rem;
+      background: white;
+      color: #555;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.15s;
+    }
+
+    #skip-btn:hover { background: #f0f0f0; }
+  </style>
+</head>
+<body>
+  <h1>Which abstract interests you more?</h1>
+  <p id="status">Loading...</p>
+
+  <div id="pair" style="display:none">
+    <div class="card" id="card-a">
+      <h2 id="title-a"></h2>
+      <p id="abstract-a"></p>
+      <button onclick="choose('a')">This one</button>
+    </div>
+    <div class="card" id="card-b">
+      <h2 id="title-b"></h2>
+      <p id="abstract-b"></p>
+      <button onclick="choose('b')">This one</button>
+    </div>
+  </div>
+
+  <button id="skip-btn" style="display:none" onclick="loadPair()">Skip</button>
+
+  <script>
+    let currentPair = null;
+    let totalChoices = 0;
+
+    async function loadPair() {
+      document.getElementById("pair").style.display = "none";
+      document.getElementById("status").textContent = "Loading...";
+
+      const res = await fetch("/pair");
+      currentPair = await res.json();
+
+      document.getElementById("title-a").textContent = currentPair.paper_a.title;
+      document.getElementById("abstract-a").textContent = currentPair.paper_a.abstract;
+      document.getElementById("title-b").textContent = currentPair.paper_b.title;
+      document.getElementById("abstract-b").textContent = currentPair.paper_b.abstract;
+
+      document.getElementById("pair").style.display = "grid";
+      document.getElementById("skip-btn").style.display = "inline-block";
+      document.getElementById("status").textContent = `${totalChoices} choices recorded`;
+    }
+
+    async function choose(side) {
+      const chosen = side === "a" ? currentPair.paper_a : currentPair.paper_b;
+      const rejected = side === "a" ? currentPair.paper_b : currentPair.paper_a;
+
+      const res = await fetch("/choose", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chosen_id: chosen.id, rejected_id: rejected.id }),
+      });
+
+      const data = await res.json();
+      totalChoices = data.total_choices;
+      loadPair();
+    }
+
+    loadPair();
+  </script>
+</body>
+</html>

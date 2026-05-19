@@ -7,3 +7,5 @@ sentencepiece
 bertopic
 umap-learn
 hdbscan
+fastapi
+uvicorn
