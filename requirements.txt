@@ -1,2 +1,6 @@
 requests
 pytest
+torch
+transformers
+qdrant-client
+sentencepiece
