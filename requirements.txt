@@ -4,3 +4,6 @@ torch
 transformers
 qdrant-client
 sentencepiece
+bertopic
+umap-learn
+hdbscan
