@@ -3,11 +3,15 @@ import os
 import hashlib
 import time
 import random
+import logging
 import torch
 from transformers import AutoTokenizer, AutoModel
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 from qdrant_client.http.exceptions import ResponseHandlingException
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
+log = logging.getLogger(__name__)
 
 QDRANT_TIMEOUT = 60
 MAX_RETRIES = 5
@@ -21,7 +25,6 @@ EMBEDDING_DIM = 768
 
 
 def paper_id_to_int(paper_id: str) -> int:
-    # stable integer ID for Qdrant derived from the Semantic Scholar paper_id
     return int(hashlib.md5(paper_id.encode()).hexdigest(), 16) % (2 ** 63)
 
 
@@ -31,7 +34,7 @@ def load_model():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = model.to(device)
     model.eval()
-    print(f"Model loaded on {device}")
+    log.info(f"Model loaded on {device}")
     return tokenizer, model, device
 
 
@@ -118,9 +121,9 @@ def run():
         mark_embedded(conn, [p["id"] for p in papers])
 
         total += len(papers)
-        print(f"  embedded={total}", end="\r")
+        log.info(f"embedded={total}")
 
-    print(f"\nDone — {total} papers embedded")
+    log.info(f"Done — {total} papers embedded")
     conn.close()
 
 

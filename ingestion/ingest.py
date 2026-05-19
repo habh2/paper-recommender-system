@@ -11,8 +11,9 @@ FIELDS = "paperId,title,abstract,year,citationCount,fieldsOfStudy,authors"
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "papers.db")
 TARGET_PAPER_COUNT = 40000
 
-logging.basicConfig(filename='app.log', level=logging.DEBUG, 
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
+log = logging.getLogger(__name__)
+
 
 def create_db(path: str) -> sqlite3.Connection:
     conn = sqlite3.connect(path)
@@ -102,7 +103,7 @@ def ingest(query: str) -> None:
     ).fetchone()[0]
 
     if existing >= TARGET_PAPER_COUNT:
-        print(f"Skipping — {existing:,} papers already in DB for [{query}]")
+        log.info(f"Skipping — {existing:,} papers already in DB for [{query}]")
         conn.close()
         return
 
@@ -110,33 +111,33 @@ def ingest(query: str) -> None:
     inserted = 0
     fetched = 0
 
-    print(f"Ingesting [{query}] (have {existing:,}, want {TARGET_PAPER_COUNT:,})...")
+    log.info(f"Ingesting [{query}] (have {existing:,}, want {TARGET_PAPER_COUNT:,})...")
 
     while fetched < TARGET_PAPER_COUNT:
         try:
             papers, token = fetch_papers(query, token=token)
         except requests.HTTPError as e:
-            print(f"  Unrecoverable error: {e}")
+            log.error(f"Unrecoverable error: {e}")
             raise
 
         if not papers:
-            logging.info("No papers were retrieved")
+            log.info("No papers were retrieved")
             break
 
         new_rows = upsert_papers(conn, papers, query)
         fetched += len(papers)
         inserted += new_rows
 
-        print(f"  fetched={fetched}  new={inserted}", end="\r")
+        log.info(f"fetched={fetched}  new={inserted}")
         time.sleep(0.1 + random.uniform(0, 0.05))
 
         if token is None:
             break
 
-    print(f"\nDone — {fetched} fetched, {inserted} new rows")
+    log.info(f"Done — {fetched} fetched, {inserted} new rows")
 
     total = conn.execute("SELECT COUNT(*) FROM papers").fetchone()[0]
-    print(f"\nTotal papers in DB: {total}")
+    log.info(f"Total papers in DB: {total}")
     conn.close()
 
 
