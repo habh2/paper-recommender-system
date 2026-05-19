@@ -9,7 +9,7 @@ import logging
 BASE_URL = "https://api.semanticscholar.org/graph/v1"
 FIELDS = "paperId,title,abstract,year,citationCount,fieldsOfStudy,authors"
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "papers.db")
-TARGET_PAPER_COUNT = 10000
+TARGET_PAPER_COUNT = 40000
 
 logging.basicConfig(filename='app.log', level=logging.DEBUG, 
                     format='%(asctime)s - %(levelname)s - %(message)s')
@@ -40,7 +40,7 @@ def _backoff_sleep(attempt: int, base: float = 1.0, cap: float = 60.0) -> None:
 
 def fetch_papers(query: str, token: str | None = None,
                  max_retries: int = 5) -> tuple[list, str | None]:
-    params = {"query": query, "fields": FIELDS, "limit": 1000, "sort": "citationCount:desc"}
+    params = {"query": query, "fields": FIELDS, "limit": 1000, "sort": "publicationDate:desc"}
     if token:
         params["token"] = token
 
