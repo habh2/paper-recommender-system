@@ -9,7 +9,7 @@ import logging
 BASE_URL = "https://api.semanticscholar.org/graph/v1"
 FIELDS = "paperId,title,abstract,year,citationCount,fieldsOfStudy,authors"
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "papers.db")
-TARGET_PAPER_COUNT = 30000
+TARGET_PAPER_COUNT = 5000
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
 log = logging.getLogger(__name__)
