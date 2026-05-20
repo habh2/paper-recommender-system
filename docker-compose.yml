@@ -20,6 +20,7 @@ services:
       dockerfile: embeddings/Dockerfile
     volumes:
       - papers_db:/app/data
+      - hf_cache:/root/.cache/huggingface
     environment:
       - QDRANT_URL=http://qdrant:6333
     depends_on:
@@ -75,3 +76,4 @@ volumes:
   qdrant_data:
   papers_db:
   models:
+  hf_cache:
