@@ -7,7 +7,7 @@ import pytest
 from sklearn.linear_model import LogisticRegression
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "papers.db")
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "preference_model.pkl")
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "models", "preference_model.pkl")
 MIN_CHOICES = 10
 
 

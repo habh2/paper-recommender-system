@@ -5,8 +5,8 @@ from qdrant_client import QdrantClient
 from preference.rerank import load_models, get_candidates, score_candidates, enrich_with_metadata
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "papers.db")
-TOPIC_MODEL_PATH = os.path.join(os.path.dirname(__file__), "topic_model")
-PREFERENCE_MODEL_PATH = os.path.join(os.path.dirname(__file__), "preference_model.pkl")
+TOPIC_MODEL_PATH = os.path.join(os.path.dirname(__file__), "models", "topic_model")
+PREFERENCE_MODEL_PATH = os.path.join(os.path.dirname(__file__), "models", "preference_model.pkl")
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 
 
