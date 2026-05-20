@@ -35,8 +35,9 @@ def train(abstracts: list[str], vectors: np.ndarray) -> BERTopic:
     vectorizer = CountVectorizer(stop_words="english")
     model = BERTopic(nr_topics=NR_TOPICS, verbose=True, vectorizer_model=vectorizer)
     topics, _ = model.fit_transform(abstracts, embeddings=vectors)
-    new_topics = model.reduce_outliers(abstracts, topics, strategy="embeddings", embeddings=vectors)
-    model.update_topics(abstracts, topics=new_topics, vectorizer_model=vectorizer)
+    if -1 in topics:
+        new_topics = model.reduce_outliers(abstracts, topics, strategy="embeddings", embeddings=vectors)
+        model.update_topics(abstracts, topics=new_topics, vectorizer_model=vectorizer)
     return model
 
 
