@@ -1,0 +1,6 @@
+FROM recommender-base
+
+COPY preference/extract_embeddings.py .
+COPY preference/train_topic_model.py .
+
+CMD ["python", "train_topic_model.py"]

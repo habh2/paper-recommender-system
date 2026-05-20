@@ -6,5 +6,72 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
 
+  ingest:
+    build:
+      context: .
+      dockerfile: ingestion/Dockerfile
+    volumes:
+      - papers_db:/app/data
+    profiles: [pipeline]
+
+  embed:
+    build:
+      context: .
+      dockerfile: embeddings/Dockerfile
+    volumes:
+      - papers_db:/app/data
+    environment:
+      - QDRANT_URL=http://qdrant:6333
+    depends_on:
+      - qdrant
+    profiles: [pipeline]
+
+  train-topic:
+    build:
+      context: .
+      dockerfile: preference/Dockerfile.train_topic
+    volumes:
+      - papers_db:/app/data
+      - models:/app/models
+    environment:
+      - QDRANT_URL=http://qdrant:6333
+    depends_on:
+      - qdrant
+    profiles: [pipeline]
+
+  compute-dist:
+    build:
+      context: .
+      dockerfile: preference/Dockerfile.compute_dist
+    volumes:
+      - papers_db:/app/data
+      - models:/app/models
+    profiles: [pipeline]
+
+  train-pref:
+    build:
+      context: .
+      dockerfile: preference/Dockerfile.train_pref
+    volumes:
+      - papers_db:/app/data
+      - models:/app/models
+    profiles: [pipeline]
+
+  app:
+    build:
+      context: .
+      dockerfile: preference/Dockerfile.app
+    ports:
+      - "8000:8000"
+    volumes:
+      - papers_db:/app/data
+      - models:/app/models
+    environment:
+      - QDRANT_URL=http://qdrant:6333
+    depends_on:
+      - qdrant
+
 volumes:
   qdrant_data:
+  papers_db:
+  models:
