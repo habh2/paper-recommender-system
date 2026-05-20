@@ -9,7 +9,7 @@ import logging
 BASE_URL = "https://api.semanticscholar.org/graph/v1"
 FIELDS = "paperId,title,abstract,year,citationCount,fieldsOfStudy,authors"
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "papers.db")
-TARGET_PAPER_COUNT = 40000
+TARGET_PAPER_COUNT = 30000
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
 log = logging.getLogger(__name__)
@@ -46,7 +46,7 @@ def _backoff_sleep(attempt: int, base: float = 1.0, cap: float = 60.0) -> None:
 
 def fetch_papers(query: str, token: str | None = None,
                  max_retries: int = 5) -> tuple[list, str | None]:
-    params = {"query": query, "fields": FIELDS, "limit": 1000, "sort": "publicationDate:desc"}
+    params = {"query": query, "fields": FIELDS, "limit": 1000}
     if token:
         params["token"] = token
 
@@ -59,10 +59,12 @@ def fetch_papers(query: str, token: str | None = None,
 
         if resp.status_code == 429:
             retry_after = min(60, 2 ** attempt) + random.uniform(0, 1)
+            log.warning(f"429 rate limit — retrying in {retry_after:.1f}s (attempt {attempt + 1})")
             time.sleep(retry_after)
             continue
 
         if resp.status_code >= 500:
+            log.warning(f"HTTP {resp.status_code} — retrying (attempt {attempt + 1})")
             if attempt == max_retries - 1:
                 resp.raise_for_status()
             _backoff_sleep(attempt)
@@ -70,7 +72,12 @@ def fetch_papers(query: str, token: str | None = None,
 
         resp.raise_for_status()
         body = resp.json()
-        return body.get("data", []), body.get("token")
+        if not token:
+            log.info(f"API reports {body.get('total', 'unknown'):,} total papers for this query")
+        next_token = body.get("token")
+        if next_token is None:
+            log.info("Pagination token is None — API has no further pages")
+        return body.get("data", []), next_token
 
     return [], None
 
