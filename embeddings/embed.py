@@ -92,6 +92,11 @@ def run():
     ensure_collection(client)
     tokenizer, model, device = load_model()
 
+    silver_count = conn.execute("SELECT COUNT(*) FROM papers_silver").fetchone()[0]
+    already_embedded = conn.execute("SELECT COUNT(*) FROM papers_silver WHERE embedded = 1").fetchone()[0]
+    to_embed = silver_count - already_embedded
+    log.info(f"Silver table: {silver_count:,} papers | already embedded: {already_embedded:,} | to embed: {to_embed:,}")
+
     total = 0
     while True:
         papers = fetch_unembedded(conn, BATCH_SIZE)
