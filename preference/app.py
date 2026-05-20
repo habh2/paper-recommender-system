@@ -128,11 +128,11 @@ def get_recommendations(paper_id: str = Query(...), k: int = Query(default=10, g
 def get_last_chosen():
     with get_db() as conn:
         row = conn.execute(
-            "SELECT chosen_paper_id, p.title FROM choices c JOIN papers p ON p.paper_id = c.chosen_paper_id ORDER BY timestamp DESC LIMIT 1"
+            "SELECT chosen_paper_id, p.title, p.abstract FROM choices c JOIN papers p ON p.paper_id = c.chosen_paper_id ORDER BY timestamp DESC LIMIT 1"
         ).fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="No choices recorded yet")
-    return {"paper_id": row["chosen_paper_id"], "title": row["title"]}
+    return {"paper_id": row["chosen_paper_id"], "title": row["title"], "abstract": row["abstract"]}
 
 
 app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")

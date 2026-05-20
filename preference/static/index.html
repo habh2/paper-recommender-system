@@ -34,9 +34,12 @@
       border-radius: 8px;
       padding: 1.5rem;
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-rows: subgrid;
+      grid-row: span 3;
       gap: 1rem;
+      align-content: start;
+      min-width: 0;
     }
 
     .card h2 { font-size: 1rem; color: #111; line-height: 1.4; }
@@ -57,6 +60,17 @@
     .card button:hover { background: #1d4ed8; }
 
     #loading { color: #888; font-size: 1rem; }
+
+    .card .toggle-abstract {
+      background: none;
+      color: #2563eb;
+      padding: 0;
+      font-size: 0.82rem;
+      margin-top: 0.25rem;
+      border-radius: 0;
+      transition: none;
+    }
+    .card .toggle-abstract:hover { background: none; text-decoration: underline; }
 
     #skip-btn {
       margin-top: 1.5rem;
@@ -81,12 +95,12 @@
   <div id="pair" style="display:none">
     <div class="card" id="card-a">
       <h2 id="title-a"></h2>
-      <p id="abstract-a"></p>
+      <div id="abstract-a"></div>
       <button onclick="choose('a')">This one</button>
     </div>
     <div class="card" id="card-b">
       <h2 id="title-b"></h2>
-      <p id="abstract-b"></p>
+      <div id="abstract-b"></div>
       <button onclick="choose('b')">This one</button>
     </div>
   </div>
@@ -94,8 +108,31 @@
   <button id="skip-btn" style="display:none" onclick="loadPair()">Skip</button>
 
   <script>
+    const PREVIEW_LENGTH = 300;
     let currentPair = null;
     let totalChoices = 0;
+
+    function renderAbstract(containerId, paperId, abstract) {
+      const el = document.getElementById(containerId);
+      if (abstract.length > PREVIEW_LENGTH) {
+        el.innerHTML = `
+          <p><span id="preview-${paperId}">${abstract.slice(0, PREVIEW_LENGTH).trimEnd()}…</span>
+          <span id="full-${paperId}" style="display:none">${abstract}</span></p>
+          <button class="toggle-abstract" id="toggle-${paperId}" onclick="toggleAbstract('${paperId}')">Show more</button>`;
+      } else {
+        el.innerHTML = `<p>${abstract}</p>`;
+      }
+    }
+
+    function toggleAbstract(paperId) {
+      const preview = document.getElementById(`preview-${paperId}`);
+      const full = document.getElementById(`full-${paperId}`);
+      const btn = document.getElementById(`toggle-${paperId}`);
+      const expanded = full.style.display === "inline";
+      preview.style.display = expanded ? "inline" : "none";
+      full.style.display = expanded ? "none" : "inline";
+      btn.textContent = expanded ? "Show more" : "Show less";
+    }
 
     async function loadPair() {
       document.getElementById("pair").style.display = "none";
@@ -105,9 +142,9 @@
       currentPair = await res.json();
 
       document.getElementById("title-a").textContent = currentPair.paper_a.title;
-      document.getElementById("abstract-a").textContent = currentPair.paper_a.abstract;
       document.getElementById("title-b").textContent = currentPair.paper_b.title;
-      document.getElementById("abstract-b").textContent = currentPair.paper_b.abstract;
+      renderAbstract("abstract-a", currentPair.paper_a.id, currentPair.paper_a.abstract);
+      renderAbstract("abstract-b", currentPair.paper_b.id, currentPair.paper_b.abstract);
 
       document.getElementById("pair").style.display = "grid";
       document.getElementById("skip-btn").style.display = "inline-block";
