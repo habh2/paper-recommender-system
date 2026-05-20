@@ -32,7 +32,7 @@ services:
       dockerfile: preference/Dockerfile.train_topic
     volumes:
       - papers_db:/app/data
-      - models:/app/models
+      - models:/app/preference/models
     environment:
       - QDRANT_URL=http://qdrant:6333
     depends_on:
@@ -45,7 +45,7 @@ services:
       dockerfile: preference/Dockerfile.compute_dist
     volumes:
       - papers_db:/app/data
-      - models:/app/models
+      - models:/app/preference/models
     profiles: [pipeline]
 
   train-pref:
@@ -54,7 +54,7 @@ services:
       dockerfile: preference/Dockerfile.train_pref
     volumes:
       - papers_db:/app/data
-      - models:/app/models
+      - models:/app/preference/models
     profiles: [pipeline]
 
   app:
@@ -65,7 +65,7 @@ services:
       - "8000:8000"
     volumes:
       - papers_db:/app/data
-      - models:/app/models
+      - models:/app/preference/models
     environment:
       - QDRANT_URL=http://qdrant:6333
     depends_on:

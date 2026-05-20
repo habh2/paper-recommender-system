@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "papers.db")
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
-MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "topic_model")
+MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models", "topic_model")
 NR_TOPICS = 80
 
 

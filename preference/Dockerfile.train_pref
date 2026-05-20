@@ -1,5 +1,5 @@
 FROM recommender-base
 
-COPY preference/train_preference_model.py .
+COPY preference/train_preference_model.py preference/train_preference_model.py
 
-CMD ["python", "train_preference_model.py"]
+CMD ["python", "preference/train_preference_model.py"]

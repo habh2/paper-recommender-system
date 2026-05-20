@@ -1,5 +1,5 @@
 FROM recommender-base
 
-COPY preference/compute_distributions.py .
+COPY preference/compute_distributions.py preference/compute_distributions.py
 
-CMD ["python", "compute_distributions.py"]
+CMD ["python", "preference/compute_distributions.py"]

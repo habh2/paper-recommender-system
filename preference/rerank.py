@@ -7,8 +7,8 @@ from qdrant_client import QdrantClient
 from sklearn.linear_model import LogisticRegression
 
 ANN_CANDIDATES = 200
-MODEL_PATH_TOPIC = "topic_model"
-MODEL_PATH_PREFERENCE = "preference_model.pkl"
+MODEL_PATH_TOPIC = "models/topic_model"
+MODEL_PATH_PREFERENCE = "models/preference_model.pkl"
 COLLECTION = "papers"
 
 
