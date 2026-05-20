@@ -217,7 +217,8 @@
 
       const recRes = await fetch(`/recommend?paper_id=${encodeURIComponent(seed.paper_id)}&k=10`);
       if (!recRes.ok) {
-        document.getElementById("status").textContent = "Could not load recommendations.";
+        const err = await recRes.json().catch(() => ({}));
+        document.getElementById("status").textContent = err.detail || "Could not load recommendations.";
         return;
       }
 

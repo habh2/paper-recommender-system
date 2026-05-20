@@ -1,4 +1,5 @@
 import json
+import os
 import sqlite3
 import pickle
 import numpy as np
@@ -14,14 +15,17 @@ COLLECTION = "papers"
 
 def load_models(topic_model_path: str, preference_model_path: str):
     topic_model = BERTopic.load(topic_model_path)
-    with open(preference_model_path, "rb") as f:
-        preference_model = pickle.load(f)
-
     topic_labels = {
         row.Topic: row.Name
         for row in topic_model.get_topic_info().itertuples()
         if row.Topic != -1
     }
+
+    if not os.path.exists(preference_model_path):
+        return None, topic_labels
+
+    with open(preference_model_path, "rb") as f:
+        preference_model = pickle.load(f)
     return preference_model, topic_labels
 
 

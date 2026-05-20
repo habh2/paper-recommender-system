@@ -97,6 +97,8 @@ def post_choice(body: ChoiceRequest):
 
 @app.get("/profile")
 def get_profile(n: int = Query(default=5, ge=1, le=20)):
+    if preference_model is None:
+        raise HTTPException(status_code=503, detail="Preference model not trained yet — run train-pref first")
     weights = preference_model.coef_[0]
     ranked = sorted(enumerate(weights), key=lambda x: x[1], reverse=True)
 
@@ -113,6 +115,8 @@ def get_profile(n: int = Query(default=5, ge=1, le=20)):
 
 @app.get("/recommend")
 def get_recommendations(paper_id: str = Query(...), k: int = Query(default=10, ge=1, le=50)):
+    if preference_model is None:
+        raise HTTPException(status_code=503, detail="Preference model not trained yet — run train-pref first")
     candidates = get_candidates(paper_id, qdrant_client)
     if not candidates:
         raise HTTPException(status_code=404, detail="No candidates found for this paper")
@@ -122,6 +126,13 @@ def get_recommendations(paper_id: str = Query(...), k: int = Query(default=10, g
         results = enrich_with_metadata(results, conn)
 
     return {"seed_paper_id": paper_id, "recommendations": results}
+
+
+@app.get("/choices/count")
+def get_choices_count():
+    with get_db() as conn:
+        total = conn.execute("SELECT COUNT(*) FROM choices").fetchone()[0]
+    return {"total_choices": total}
 
 
 @app.get("/last-chosen")

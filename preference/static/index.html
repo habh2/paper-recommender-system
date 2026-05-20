@@ -112,6 +112,14 @@
     let currentPair = null;
     let totalChoices = 0;
 
+    async function initChoiceCount() {
+      const res = await fetch("/choices/count");
+      if (res.ok) {
+        const data = await res.json();
+        totalChoices = data.total_choices;
+      }
+    }
+
     function renderAbstract(containerId, paperId, abstract) {
       const el = document.getElementById(containerId);
       if (abstract.length > PREVIEW_LENGTH) {
@@ -166,7 +174,7 @@
       loadPair();
     }
 
-    loadPair();
+    initChoiceCount().then(() => loadPair());
   </script>
 </body>
 </html>
