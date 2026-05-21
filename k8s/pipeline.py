@@ -43,10 +43,11 @@ def _mount_qdrant_env(task):
     )
 
 
-@dsl.pipeline(name="recommender-pipeline")
-def recommender_pipeline():
+@dsl.pipeline(name="data-pipeline")
+def data_pipeline():
     ingest_task = ingest()
     kubernetes.mount_pvc(ingest_task, pvc_name="papers-db-pvc", mount_path="/app/data")
+
     embed_task = embed().after(ingest_task)
     kubernetes.mount_pvc(embed_task, pvc_name="papers-db-pvc", mount_path="/app/data")
     kubernetes.mount_pvc(embed_task, pvc_name="hf-cache-pvc", mount_path="/root/.cache/huggingface")
@@ -61,10 +62,14 @@ def recommender_pipeline():
     kubernetes.mount_pvc(compute_dist_task, pvc_name="papers-db-pvc", mount_path="/app/data")
     kubernetes.mount_pvc(compute_dist_task, pvc_name="models-pvc", mount_path="/app/preference/models")
 
-    train_pref_task = train_pref().after(compute_dist_task)
+
+@dsl.pipeline(name="preference-pipeline")
+def preference_pipeline():
+    train_pref_task = train_pref()
     kubernetes.mount_pvc(train_pref_task, pvc_name="papers-db-pvc", mount_path="/app/data")
     kubernetes.mount_pvc(train_pref_task, pvc_name="models-pvc", mount_path="/app/preference/models")
 
 
 if __name__ == "__main__":
-    compiler.Compiler().compile(recommender_pipeline, "k8s/pipeline.yaml")
+    compiler.Compiler().compile(data_pipeline, "k8s/data_pipeline.yaml")
+    compiler.Compiler().compile(preference_pipeline, "k8s/preference_pipeline.yaml")
