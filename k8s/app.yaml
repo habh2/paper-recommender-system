@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recommender-app
+  namespace: kubeflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: recommender-app
+  template:
+    metadata:
+      labels:
+        app: recommender-app
+    spec:
+      containers:
+      - name: app
+        image: ghcr.io/habh2/recommender-system-app:latest
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: pipeline-config
+        volumeMounts:
+        - name: papers-db
+          mountPath: /app/data
+        - name: models
+          mountPath: /app/preference/models
+      volumes:
+      - name: papers-db
+        persistentVolumeClaim:
+          claimName: papers-db-pvc
+      - name: models
+        persistentVolumeClaim:
+          claimName: models-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: recommender-app
+  namespace: kubeflow
+spec:
+  selector:
+    app: recommender-app
+  ports:
+  - port: 8000
+    targetPort: 8000
