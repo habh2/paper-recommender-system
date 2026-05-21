@@ -17,8 +17,15 @@ $IMAGES = @(
     "recommender-system-train-pref"
 )
 
-Write-Host "Pushing images to local registry..."
+Write-Host "Pushing images to local registry (skipping unchanged)..."
 foreach ($img in $IMAGES) {
+    $localId  = docker inspect --format "{{.Id}}" "${img}:latest" 2>$null
+    $taggedId = docker inspect --format "{{.Id}}" "${REGISTRY}/${img}:latest" 2>$null
+    if ($localId -and $localId -eq $taggedId) {
+        Write-Host "  ${img}: up to date, skipping"
+        continue
+    }
+    Write-Host "  ${img}: pushing..."
     docker tag "${img}:latest" "${REGISTRY}/${img}:latest"
     docker push "${REGISTRY}/${img}:latest"
 }
@@ -31,6 +38,12 @@ kubectl apply -f "k8s\config.yaml"
 Write-Host "Compiling KFP pipeline..."
 python "k8s\pipeline.py"
 
-Write-Host "Done. Upload k8s\pipeline.yaml via the KFP UI to run the pipeline."
+Write-Host "Submitting experiment and pipeline to KFP..."
+$pf = Start-Job { kubectl port-forward -n kubeflow svc/ml-pipeline 8888:8888 }
+Start-Sleep -Seconds 3
+python "k8s\submit_pipeline.py"
+Stop-Job $pf
+Remove-Job $pf
+
 Write-Host "Access the UI with:"
 Write-Host "  kubectl port-forward -n kubeflow svc/ml-pipeline-ui 8080:80"
