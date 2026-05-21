@@ -1,5 +1,4 @@
-from kfp import dsl, compiler
-from kfp_kubernetes import mount_pvc, set_image_pull_policy
+from kfp import dsl, compiler, kubernetes
 
 INGEST_IMAGE = "recommender-system-ingest:latest"
 EMBED_IMAGE = "recommender-system-embed:latest"
@@ -44,28 +43,28 @@ def train_pref():
 @dsl.pipeline(name="recommender-pipeline")
 def recommender_pipeline():
     ingest_task = ingest()
-    mount_pvc(ingest_task, pvc_name="papers-db-pvc", mount_path="/app/data")
-    set_image_pull_policy(ingest_task, "IfNotPresent")
+    kubernetes.mount_pvc(ingest_task, pvc_name="papers-db-pvc", mount_path="/app/data")
+    kubernetes.set_image_pull_policy(ingest_task, "IfNotPresent")
 
     embed_task = embed().after(ingest_task)
-    mount_pvc(embed_task, pvc_name="papers-db-pvc", mount_path="/app/data")
-    mount_pvc(embed_task, pvc_name="hf-cache-pvc", mount_path="/root/.cache/huggingface")
-    set_image_pull_policy(embed_task, "IfNotPresent")
+    kubernetes.mount_pvc(embed_task, pvc_name="papers-db-pvc", mount_path="/app/data")
+    kubernetes.mount_pvc(embed_task, pvc_name="hf-cache-pvc", mount_path="/root/.cache/huggingface")
+    kubernetes.set_image_pull_policy(embed_task, "IfNotPresent")
 
     train_topic_task = train_topic().after(embed_task)
-    mount_pvc(train_topic_task, pvc_name="papers-db-pvc", mount_path="/app/data")
-    mount_pvc(train_topic_task, pvc_name="models-pvc", mount_path="/app/preference/models")
-    set_image_pull_policy(train_topic_task, "IfNotPresent")
+    kubernetes.mount_pvc(train_topic_task, pvc_name="papers-db-pvc", mount_path="/app/data")
+    kubernetes.mount_pvc(train_topic_task, pvc_name="models-pvc", mount_path="/app/preference/models")
+    kubernetes.set_image_pull_policy(train_topic_task, "IfNotPresent")
 
     compute_dist_task = compute_dist().after(train_topic_task)
-    mount_pvc(compute_dist_task, pvc_name="papers-db-pvc", mount_path="/app/data")
-    mount_pvc(compute_dist_task, pvc_name="models-pvc", mount_path="/app/preference/models")
-    set_image_pull_policy(compute_dist_task, "IfNotPresent")
+    kubernetes.mount_pvc(compute_dist_task, pvc_name="papers-db-pvc", mount_path="/app/data")
+    kubernetes.mount_pvc(compute_dist_task, pvc_name="models-pvc", mount_path="/app/preference/models")
+    kubernetes.set_image_pull_policy(compute_dist_task, "IfNotPresent")
 
     train_pref_task = train_pref().after(compute_dist_task)
-    mount_pvc(train_pref_task, pvc_name="papers-db-pvc", mount_path="/app/data")
-    mount_pvc(train_pref_task, pvc_name="models-pvc", mount_path="/app/preference/models")
-    set_image_pull_policy(train_pref_task, "IfNotPresent")
+    kubernetes.mount_pvc(train_pref_task, pvc_name="papers-db-pvc", mount_path="/app/data")
+    kubernetes.mount_pvc(train_pref_task, pvc_name="models-pvc", mount_path="/app/preference/models")
+    kubernetes.set_image_pull_policy(train_pref_task, "IfNotPresent")
 
 
 if __name__ == "__main__":
