@@ -6,7 +6,8 @@ param(
     [string]$KFP_VERSION = "2.15.0",
     [string]$CLUSTER_NAME = "kubeflow",
     [string]$REGISTRY_NAME = "kind-registry",
-    [int]$REGISTRY_PORT = 5001
+    [int]$REGISTRY_PORT = 5001,
+    [switch]$SkipCluster
 )
 
 
@@ -21,12 +22,13 @@ if (-not (docker ps --filter "name=$REGISTRY_NAME" --format "{{.Names}}" | Selec
     Write-Host "Local registry already running."
 }
 
-# Write-Host "Deleting existing cluster (if any)..."
-# kind delete cluster --name $CLUSTER_NAME
+if (-not $SkipCluster) {
+    Write-Host "Deleting existing cluster (if any)..."
+    kind delete cluster --name $CLUSTER_NAME
 
-
-# Write-Host "Creating Kind cluster..."
-# kind create cluster --name $CLUSTER_NAME
+    Write-Host "Creating Kind cluster..."
+    kind create cluster --name $CLUSTER_NAME
+}
 
 Write-Host "Connecting registry to Kind network..."
 $networks = docker inspect $REGISTRY_NAME --format "{{json .NetworkSettings.Networks}}"
