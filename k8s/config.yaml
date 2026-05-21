@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pipeline-config
+  namespace: kubeflow
+data:
+  QDRANT_URL: http://qdrant:6333

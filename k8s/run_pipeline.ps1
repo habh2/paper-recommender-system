@@ -3,24 +3,33 @@
 
 
 param(
-    [string]$CLUSTER_NAME = "kubeflow"
+    [string]$CLUSTER_NAME = "kubeflow",
+    [string]$REGISTRY = "127.0.0.1:5001"
 )
+
 $ErrorActionPreference = "Stop"
 
+$IMAGES = @(
+    "recommender-system-ingest",
+    "recommender-system-embed",
+    "recommender-system-train-topic",
+    "recommender-system-compute-dist",
+    "recommender-system-train-pref"
+)
 
-Write-Host "Applying shared volumes..."
-kubectl apply -f "$PSScriptRoot\volumes.yaml"
-kubectl apply -f "$PSScriptRoot\qdrant.yaml"
+Write-Host "Pushing images to local registry..."
+foreach ($img in $IMAGES) {
+    docker tag "${img}:latest" "${REGISTRY}/${img}:latest"
+    docker push "${REGISTRY}/${img}:latest"
+}
 
-Write-Host "Loading images into Kind..."
-kind load docker-image recommender-system-ingest:latest --name $CLUSTER_NAME
-kind load docker-image recommender-system-embed:latest --name $CLUSTER_NAME
-kind load docker-image recommender-system-train-topic:latest --name $CLUSTER_NAME
-kind load docker-image recommender-system-compute-dist:latest --name $CLUSTER_NAME
-kind load docker-image recommender-system-train-pref:latest --name $CLUSTER_NAME
+Write-Host "Applying shared volumes and config..."
+kubectl apply -f "k8s\volumes.yaml"
+kubectl apply -f "k8s\qdrant.yaml"
+kubectl apply -f "k8s\config.yaml"
 
 Write-Host "Compiling KFP pipeline..."
-python "$PSScriptRoot\pipeline.py"
+python "k8s\pipeline.py"
 
 Write-Host "Done. Upload k8s\pipeline.yaml via the KFP UI to run the pipeline."
 Write-Host "Access the UI with:"
