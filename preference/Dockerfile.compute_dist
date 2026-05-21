@@ -1,5 +1,7 @@
 FROM recommender-base
 
+LABEL org.opencontainers.image.source=https://github.com/habh2/recommender-system
+
 COPY preference/compute_distributions.py preference/compute_distributions.py
 
 CMD ["python", "preference/compute_distributions.py"]

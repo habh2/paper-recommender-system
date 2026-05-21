@@ -1,5 +1,7 @@
 FROM recommender-base
 
+LABEL org.opencontainers.image.source=https://github.com/habh2/recommender-system
+
 COPY preference/train_preference_model.py preference/train_preference_model.py
 
 CMD ["python", "preference/train_preference_model.py"]
