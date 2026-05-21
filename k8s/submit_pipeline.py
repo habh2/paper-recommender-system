@@ -9,10 +9,18 @@ client = kfp.Client(host=KFP_HOST)
 
 client.create_experiment(EXPERIMENT)
 
-client.upload_pipeline(
-    pipeline_package_path=PIPELINE_FILE,
-    pipeline_name=PIPELINE_NAME,
-)
+pipeline_id = client.get_pipeline_id(PIPELINE_NAME)
+if pipeline_id:
+    client.upload_pipeline_version(
+        pipeline_package_path=PIPELINE_FILE,
+        pipeline_id=pipeline_id,
+        pipeline_version_name="latest",
+    )
+else:
+    client.upload_pipeline(
+        pipeline_package_path=PIPELINE_FILE,
+        pipeline_name=PIPELINE_NAME,
+    )
 
 print(f"Experiment '{EXPERIMENT}' and pipeline '{PIPELINE_NAME}' ready.")
 print(f"Trigger a run at: {KFP_HOST}")

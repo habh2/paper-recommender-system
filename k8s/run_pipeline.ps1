@@ -1,10 +1,11 @@
 # Local development only — runs the full KFP pipeline setup on a Kind cluster.
 # Run setup_kind.ps1 first if the cluster does not exist yet.
+# Requires $env:GITHUB_TOKEN to be set with write:packages scope.
 
 
 param(
     [string]$CLUSTER_NAME = "kubeflow",
-    [string]$REGISTRY = "127.0.0.1:5001"
+    [string]$REGISTRY = "ghcr.io/habh2"
 )
 
 $ErrorActionPreference = "Stop"
@@ -17,10 +18,15 @@ $IMAGES = @(
     "recommender-system-train-pref"
 )
 
-Write-Host "Pushing images to local registry (skipping unchanged)..."
+Write-Host "Logging in to GitHub Container Registry..."
+docker login ghcr.io -u habh2 -p $env:GITHUB_TOKEN
+
+Write-Host "Pushing images to GHCR (skipping unchanged)..."
 foreach ($img in $IMAGES) {
-    $localId  = docker inspect --format "{{.Id}}" "${img}:latest" 2>$null
-    $taggedId = docker inspect --format "{{.Id}}" "${REGISTRY}/${img}:latest" 2>$null
+    $localId  = docker inspect --format "{{.Id}}" "${img}:latest"
+    if ($LASTEXITCODE -ne 0) { $localId = $null }
+    $taggedId = docker inspect --format "{{.Id}}" "${REGISTRY}/${img}:latest"
+    if ($LASTEXITCODE -ne 0) { $taggedId = $null }
     if ($localId -and $localId -eq $taggedId) {
         Write-Host "  ${img}: up to date, skipping"
         continue
