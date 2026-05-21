@@ -35,6 +35,14 @@ def train_pref():
     return dsl.ContainerSpec(image=TRAIN_PREF_IMAGE, command=["python", "preference/train_preference_model.py"])
 
 
+@dsl.container_component
+def restart_app():
+    return dsl.ContainerSpec(
+        image="bitnami/kubectl:latest",
+        command=["kubectl", "rollout", "restart", "deployment/recommender-app", "-n", "kubeflow"],
+    )
+
+
 def _mount_qdrant_env(task):
     kubernetes.use_config_map_as_env(
         task,
@@ -68,6 +76,8 @@ def preference_pipeline():
     train_pref_task = train_pref()
     kubernetes.mount_pvc(train_pref_task, pvc_name="papers-db-pvc", mount_path="/app/data")
     kubernetes.mount_pvc(train_pref_task, pvc_name="models-pvc", mount_path="/app/preference/models")
+
+    restart_app().after(train_pref_task)
 
 
 if __name__ == "__main__":

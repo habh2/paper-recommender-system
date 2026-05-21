@@ -54,6 +54,7 @@ kubectl apply -f "k8s\volumes.yaml"
 kubectl apply -f "k8s\qdrant.yaml"
 kubectl apply -f "k8s\config.yaml"
 kubectl apply -f "k8s\app.yaml"
+kubectl apply -f "k8s\rbac.yaml"
 
 Write-Host "Compiling KFP pipeline..."
 python "k8s\pipeline.py"
