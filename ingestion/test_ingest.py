@@ -14,7 +14,7 @@ def db():
 
 def test_minimum_paper_count(db):
     count = db.execute("SELECT COUNT(*) FROM papers").fetchone()[0]
-    assert count >= 5_000, f"Expected >= 5,000 papers, got {count:,}"
+    assert count >= 30_000, f"Expected >= 30,000 papers, got {count:,}"
 
 
 def test_lookup_by_id(db):
