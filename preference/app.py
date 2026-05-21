@@ -136,6 +136,13 @@ def get_recommendations(paper_id: str = Query(...), k: int = Query(default=10, g
     return result
 
 
+@app.get("/health")
+def health():
+    if qdrant_client is None:
+        raise HTTPException(status_code=503, detail="Starting up")
+    return {"status": "ok", "model_ready": preference_model is not None}
+
+
 @app.get("/choices/count")
 def get_choices_count():
     with get_db() as conn:
