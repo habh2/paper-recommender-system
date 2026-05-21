@@ -21,6 +21,7 @@ QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 preference_model = None
 topic_labels = None
 qdrant_client = None
+_recommend_cache: dict = {}
 
 
 @asynccontextmanager
@@ -117,6 +118,11 @@ def get_profile(n: int = Query(default=5, ge=1, le=20)):
 def get_recommendations(paper_id: str = Query(...), k: int = Query(default=10, ge=1, le=50)):
     if preference_model is None:
         raise HTTPException(status_code=503, detail="Preference model not trained yet — run train-pref first")
+
+    cache_key = (paper_id, k)
+    if cache_key in _recommend_cache:
+        return _recommend_cache[cache_key]
+
     candidates = get_candidates(paper_id, qdrant_client)
     if not candidates:
         raise HTTPException(status_code=404, detail="No candidates found for this paper")
@@ -125,7 +131,9 @@ def get_recommendations(paper_id: str = Query(...), k: int = Query(default=10, g
         results = score_candidates(candidates, conn, preference_model, topic_labels, k=k)
         results = enrich_with_metadata(results, conn)
 
-    return {"seed_paper_id": paper_id, "recommendations": results}
+    result = {"seed_paper_id": paper_id, "recommendations": results}
+    _recommend_cache[cache_key] = result
+    return result
 
 
 @app.get("/choices/count")
