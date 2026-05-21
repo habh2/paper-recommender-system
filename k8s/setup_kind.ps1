@@ -1,10 +1,15 @@
 # Local development only — do not run against a production cluster.
 # Kind creates a throwaway Kubernetes cluster inside Docker for testing KFP pipelines locally.
 
+
 param(
     [string]$KFP_VERSION = "2.15.0",
     [string]$CLUSTER_NAME = "kubeflow"
 )
+
+
+$ErrorActionPreference = "Stop"
+
 
 Write-Host "Deleting existing cluster (if any)..."
 kind delete cluster --name $CLUSTER_NAME

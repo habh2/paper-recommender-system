@@ -1,9 +1,12 @@
 # Local development only — runs the full KFP pipeline setup on a Kind cluster.
 # Run setup_kind.ps1 first if the cluster does not exist yet.
 
+
 param(
     [string]$CLUSTER_NAME = "kubeflow"
 )
+$ErrorActionPreference = "Stop"
+
 
 Write-Host "Applying shared volumes..."
 kubectl apply -f "$PSScriptRoot\volumes.yaml"
