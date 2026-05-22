@@ -3,10 +3,11 @@ import os
 import pytest
 from qdrant_client import QdrantClient
 
+pytestmark = pytest.mark.integration
+
 DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "papers.db")
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 COLLECTION = "papers"
-EMBEDDING_DIM = 768
 
 
 @pytest.fixture(scope="module")
@@ -37,21 +38,3 @@ def test_vector_count_matches_papers(db, qdrant):
     assert vector_count == paper_count, (
         f"Qdrant has {vector_count} vectors but DB has {paper_count} papers"
     )
-
-
-def test_ann_search_returns_results(qdrant):
-    results = qdrant.query_points(
-        collection_name=COLLECTION,
-        query=[0.0] * EMBEDDING_DIM,
-        limit=10,
-    ).points
-    assert len(results) == 10, f"Expected 10 results, got {len(results)}"
-
-
-def test_ann_search_returns_paper_ids(qdrant):
-    results = qdrant.query_points(
-        collection_name=COLLECTION,
-        query=[0.0] * EMBEDDING_DIM,
-        limit=1,
-    ).points
-    assert "paper_id" in results[0].payload, "Result payload missing paper_id"

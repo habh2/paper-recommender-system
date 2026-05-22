@@ -2,6 +2,8 @@ import sqlite3
 import os
 import pytest
 
+pytestmark = pytest.mark.integration
+
 DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "papers.db")
 
 

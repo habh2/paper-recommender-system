@@ -1,11 +1,12 @@
 import sqlite3
-import time
 import tempfile
 import os
 import numpy as np
 import pytest
 from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
+
+pytestmark = pytest.mark.unit
 
 PAPER_ID = "test-paper-1"
 K = 5
@@ -54,15 +55,17 @@ def test_recommend_returns_results(client):
     assert isinstance(body["recommendations"], list)
 
 
-def test_cached_response_under_500ms(client):
-    client.get(f"/recommend?paper_id={PAPER_ID}&k={K}")
-
-    start = time.perf_counter()
-    response = client.get(f"/recommend?paper_id={PAPER_ID}&k={K}")
-    elapsed_ms = (time.perf_counter() - start) * 1000
-
-    assert response.status_code == 200
-    assert elapsed_ms < 500, f"Cached response took {elapsed_ms:.1f}ms, expected < 500ms"
+def test_cache_prevents_recomputation(client):
+    score_mock = MagicMock(return_value=[{"paper_id": "paper-a", "score": 0.9, "top_topics": []}])
+    enrich_mock = MagicMock(return_value=[{"paper_id": "paper-a", "score": 0.9, "top_topics": [], "title": "T", "abstract": "A"}])
+    with (
+        patch("preference.app._recommend_cache", {}),
+        patch("preference.app.score_candidates", score_mock),
+        patch("preference.app.enrich_with_metadata", enrich_mock),
+    ):
+        client.get("/recommend?paper_id=unique-cache-test&k=5")
+        client.get("/recommend?paper_id=unique-cache-test&k=5")
+    assert score_mock.call_count == 1, "score_candidates called twice — cache not working"
 
 
 def test_different_keys_cached_independently(client):
@@ -70,3 +73,24 @@ def test_different_keys_cached_independently(client):
     r2 = client.get(f"/recommend?paper_id={PAPER_ID}&k=10")
     assert r1.status_code == 200
     assert r2.status_code == 200
+
+
+def test_post_choice_persists(client):
+    resp = client.post("/choose", json={"chosen_id": "paper-x", "rejected_id": "paper-y"})
+    assert resp.status_code == 200
+    assert resp.json()["total_choices"] >= 1
+
+
+def test_health_ready(client):
+    resp = client.get("/health")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "ok"
+    assert body["model_ready"] is True
+
+
+def test_health_no_model(client):
+    with patch("preference.app.preference_model", None):
+        resp = client.get("/health")
+    assert resp.status_code == 200
+    assert resp.json()["model_ready"] is False

@@ -5,6 +5,8 @@ import yaml
 import pytest
 from pathlib import Path
 
+pytestmark = pytest.mark.unit
+
 # Import pipeline module without requiring k8s to be a package
 spec = importlib.util.spec_from_file_location("pipeline", Path(__file__).parent / "pipeline.py")
 pipeline_mod = importlib.util.module_from_spec(spec)
