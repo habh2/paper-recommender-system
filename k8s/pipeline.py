@@ -39,7 +39,12 @@ def train_pref():
 def restart_app():
     return dsl.ContainerSpec(
         image="bitnami/kubectl:latest",
-        command=["kubectl", "rollout", "restart", "deployment/recommender-app", "-n", "kubeflow"],
+        command=["sh", "-c"],
+        args=[
+            "kubectl scale deployment/recommender-app --replicas=2 -n kubeflow && "
+            "kubectl rollout status deployment/recommender-app -n kubeflow && "
+            "kubectl scale deployment/recommender-app --replicas=1 -n kubeflow"
+        ],
     )
 
 
