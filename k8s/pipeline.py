@@ -58,31 +58,31 @@ def _mount_qdrant_env(task):
 
 @dsl.pipeline(name="data-pipeline")
 def data_pipeline():
-    ingest_task = ingest()
+    ingest_task = ingest().set_timeout(7_200)
     kubernetes.mount_pvc(ingest_task, pvc_name="papers-db-pvc", mount_path="/app/data")
 
-    embed_task = embed().after(ingest_task)
+    embed_task = embed().after(ingest_task).set_timeout(28_800)
     kubernetes.mount_pvc(embed_task, pvc_name="papers-db-pvc", mount_path="/app/data")
     kubernetes.mount_pvc(embed_task, pvc_name="hf-cache-pvc", mount_path="/root/.cache/huggingface")
     _mount_qdrant_env(embed_task)
 
-    train_topic_task = train_topic().after(embed_task)
+    train_topic_task = train_topic().after(embed_task).set_timeout(3_600)
     kubernetes.mount_pvc(train_topic_task, pvc_name="papers-db-pvc", mount_path="/app/data")
     kubernetes.mount_pvc(train_topic_task, pvc_name="models-pvc", mount_path="/app/preference/models")
     _mount_qdrant_env(train_topic_task)
 
-    compute_dist_task = compute_dist().after(train_topic_task)
+    compute_dist_task = compute_dist().after(train_topic_task).set_timeout(3_600)
     kubernetes.mount_pvc(compute_dist_task, pvc_name="papers-db-pvc", mount_path="/app/data")
     kubernetes.mount_pvc(compute_dist_task, pvc_name="models-pvc", mount_path="/app/preference/models")
 
 
 @dsl.pipeline(name="preference-pipeline")
 def preference_pipeline():
-    train_pref_task = train_pref()
+    train_pref_task = train_pref().set_timeout(1_200)
     kubernetes.mount_pvc(train_pref_task, pvc_name="papers-db-pvc", mount_path="/app/data")
     kubernetes.mount_pvc(train_pref_task, pvc_name="models-pvc", mount_path="/app/preference/models")
 
-    restart_app().after(train_pref_task)
+    restart_app().after(train_pref_task).set_timeout(1_200)
 
 
 if __name__ == "__main__":
