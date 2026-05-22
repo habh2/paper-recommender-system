@@ -122,6 +122,7 @@ $env:GITHUB_TOKEN = "ghp_..."
 ├── embeddings/         # SPECTER2 embed → Qdrant
 ├── preference/
 │   ├── train_topic_model.py      # BERTopic training
+│   ├── extract_embeddings.py     # Pulls embeddings from Qdrant for topic model input
 │   ├── compute_distributions.py  # Topic distributions per paper
 │   ├── train_preference_model.py # Logistic regression on choices
 │   ├── evaluate.py               # Pairwise accuracy (offline evaluation gate)
