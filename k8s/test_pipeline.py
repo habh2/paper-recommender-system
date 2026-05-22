@@ -59,12 +59,13 @@ def test_preference_pipeline_name(preference_yaml):
     assert preference_yaml["pipelineInfo"]["name"] == "preference-pipeline"
 
 
-def test_preference_pipeline_has_two_steps(preference_yaml):
+def test_preference_pipeline_has_three_steps(preference_yaml):
     names = _component_names(preference_yaml)
-    assert len(names) == 2, f"Expected 2 components, got {len(names)}: {names}"
+    assert len(names) == 3, f"Expected 3 components, got {len(names)}: {names}"
 
 
 def test_preference_pipeline_steps(preference_yaml):
     names = _component_names(preference_yaml)
     assert "comp-train-pref" in names
+    assert "comp-evaluate" in names
     assert "comp-restart-app" in names

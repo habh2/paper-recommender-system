@@ -71,3 +71,10 @@ def test_preference_score_varies_across_papers(db, model):
     distributions = np.array([json.loads(r[0]) for r in rows], dtype=np.float32)
     scores = model.predict_proba(distributions)[:, 1]
     assert scores.max() - scores.min() > 0.01, "Preference scores are identical across papers — model has no signal"
+
+
+def test_pairwise_accuracy_above_chance(db):
+    from preference.evaluate import run_evaluation
+    acc, n = run_evaluation(db)
+    assert n > 0, "No held-out pairs to evaluate — record at least 5 choices"
+    assert acc >= 0.6, f"Pairwise accuracy {acc:.1%} on {n} pairs is below 60% — model may lack signal"

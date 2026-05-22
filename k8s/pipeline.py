@@ -6,6 +6,7 @@ EMBED_IMAGE = f"{REGISTRY}/recommender-system-embed:latest"
 TRAIN_TOPIC_IMAGE = f"{REGISTRY}/recommender-system-train-topic:latest"
 COMPUTE_DIST_IMAGE = f"{REGISTRY}/recommender-system-compute-dist:latest"
 TRAIN_PREF_IMAGE = f"{REGISTRY}/recommender-system-train-pref:latest"
+EVALUATE_IMAGE = TRAIN_PREF_IMAGE
 
 CONFIG_MAP = "pipeline-config"
 
@@ -33,6 +34,11 @@ def compute_dist():
 @dsl.container_component
 def train_pref():
     return dsl.ContainerSpec(image=TRAIN_PREF_IMAGE, command=["python", "preference/train_preference_model.py"])
+
+
+@dsl.container_component
+def evaluate():
+    return dsl.ContainerSpec(image=EVALUATE_IMAGE, command=["python", "preference/evaluate.py"])
 
 
 @dsl.container_component
@@ -82,7 +88,10 @@ def preference_pipeline():
     kubernetes.mount_pvc(train_pref_task, pvc_name="papers-db-pvc", mount_path="/app/data")
     kubernetes.mount_pvc(train_pref_task, pvc_name="models-pvc", mount_path="/app/preference/models")
 
-    restart_app().after(train_pref_task)
+    evaluate_task = evaluate().after(train_pref_task)
+    kubernetes.mount_pvc(evaluate_task, pvc_name="papers-db-pvc", mount_path="/app/data")
+
+    restart_app().after(evaluate_task)
 
 
 if __name__ == "__main__":
