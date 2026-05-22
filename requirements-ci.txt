@@ -1,0 +1,9 @@
+pytest
+kfp==2.16.1
+kfp-kubernetes==2.16.1
+pyyaml
+fastapi
+httpx
+numpy
+scikit-learn
+qdrant-client

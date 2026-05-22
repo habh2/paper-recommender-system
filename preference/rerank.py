@@ -1,10 +1,10 @@
+from __future__ import annotations
+
 import json
 import os
 import sqlite3
 import pickle
 import numpy as np
-from bertopic import BERTopic
-from qdrant_client import QdrantClient
 from sklearn.linear_model import LogisticRegression
 
 ANN_CANDIDATES = 200
@@ -14,6 +14,7 @@ COLLECTION = "papers"
 
 
 def load_models(topic_model_path: str, preference_model_path: str):
+    from bertopic import BERTopic
     topic_model = BERTopic.load(topic_model_path)
     topic_labels = {
         row.Topic: row.Name

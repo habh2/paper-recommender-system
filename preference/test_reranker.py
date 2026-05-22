@@ -4,8 +4,7 @@ import sqlite3
 import numpy as np
 import pytest
 from unittest.mock import MagicMock
-from qdrant_client import QdrantClient
-from preference.rerank import load_models, get_candidates, score_candidates, enrich_with_metadata
+from preference.rerank import score_candidates, enrich_with_metadata
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "papers.db")
 TOPIC_MODEL_PATH = os.path.join(os.path.dirname(__file__), "models", "topic_model")
@@ -79,11 +78,13 @@ def db():
 
 @pytest.fixture(scope="module")
 def client():
+    from qdrant_client import QdrantClient
     return QdrantClient(url=QDRANT_URL)
 
 
 @pytest.fixture(scope="module")
 def models():
+    from preference.rerank import load_models
     return load_models(TOPIC_MODEL_PATH, PREFERENCE_MODEL_PATH)
 
 
@@ -96,6 +97,7 @@ def seed_paper(db):
 
 @pytest.fixture(scope="module")
 def results(db, client, models, seed_paper):
+    from preference.rerank import get_candidates
     preference_model, topic_labels = models
     candidates = get_candidates(seed_paper, client)
     scored = score_candidates(candidates, db, preference_model, topic_labels, k=10)
@@ -104,6 +106,7 @@ def results(db, client, models, seed_paper):
 
 @pytest.mark.integration
 def test_candidates_returned(client, seed_paper):
+    from preference.rerank import get_candidates
     candidates = get_candidates(seed_paper, client)
     assert len(candidates) > 0, "No ANN candidates returned"
     assert seed_paper not in candidates, "Seed paper should not appear in its own candidates"
